@@ -2,9 +2,12 @@ name: Update Namibia weather
 
 on:
   schedule:
-    # Windhoek is UTC+2 all year: 06:07, 12:07, 15:07, 19:07 local time
-    - cron: "7 4,10,13,17 * * *"
-  workflow_dispatch: {}   # "Run workflow" button for manual runs
+    # Every 30 min from 06:07 to 19:37 Windhoek time (UTC+2 all year).
+    # GitHub can delay or drop individual scheduled runs, so each slot
+    # (06:00, 12:00, 15:00, 19:00) gets several chances; the script records
+    # a slot only once per day and skips all other runs in a few seconds.
+    - cron: "7,37 4-17 * * *"
+  workflow_dispatch: {}   # "Run workflow" button: always records a reading
 
 permissions:
   contents: write
@@ -22,20 +25,26 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-          cache: pip
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
 
       - name: Fetch weather data
-        run: python scripts/fetch_weather.py
+        id: fetch
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            python scripts/fetch_weather.py --scheduled
+          else
+            python scripts/fetch_weather.py
+          fi
+
+      - name: Install chart dependencies
+        if: always() && steps.fetch.outputs.updated != 'false'
+        run: pip install -r requirements.txt
 
       - name: Build charts
-        if: always()
+        if: always() && steps.fetch.outputs.updated != 'false'
         run: python scripts/make_charts.py
 
       - name: Commit and push
-        if: always()
+        if: always() && steps.fetch.outputs.updated != 'false'
         run: |
           git config user.name "weather-bot"
           git config user.email "weather-bot@users.noreply.github.com"

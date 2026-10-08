@@ -177,16 +177,46 @@ def write_rows(new_rows):
     return replaced
 
 
+def slot_done(date: str, slot: str) -> bool:
+    if not CSV_PATH.exists():
+        return False
+    with CSV_PATH.open(newline="", encoding="utf-8") as f:
+        return any(r["date"] == date and r["slot"] == slot and r["source"] == "open-meteo"
+                   for r in csv.DictReader(f))
+
+
+def set_output(name: str, value: str) -> None:
+    """Pass a value to later GitHub Actions steps (no-op when run locally)."""
+    import os
+    path = os.environ.get("GITHUB_OUTPUT")
+    if path:
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(f"{name}={value}\n")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--from-json", help="Use a saved API response instead of calling the API")
     ap.add_argument("--now", help="Override current time, e.g. '2026-10-08 15:10' (testing)")
+    ap.add_argument("--scheduled", action="store_true",
+                    help="Scheduled mode: only record a slot that has no reading yet today")
     args = ap.parse_args()
 
     now = datetime.now(TZ)
     if args.now:
         now = datetime.strptime(args.now, "%Y-%m-%d %H:%M").replace(tzinfo=TZ)
     slot = current_slot(now)
+
+    if args.scheduled:
+        reason = None
+        if slot == "adhoc":
+            reason = "outside all slot windows"
+        elif slot_done(now.strftime("%Y-%m-%d"), slot):
+            reason = f"slot {slot} already recorded today"
+        if reason:
+            print(f"Skipping: {reason}")
+            set_output("updated", "false")
+            return
 
     try:
         payload = json.loads(Path(args.from_json).read_text()) if args.from_json else fetch()
@@ -196,6 +226,7 @@ def main():
         sys.exit(1)
 
     replaced = write_rows(rows)
+    set_output("updated", "true")
     flags = [f"{r['location']}: {r['quality_flag']}" for r in rows if r["quality_flag"] != "ok"]
     log(f"slot={slot} | rows={len(rows)} (replaced {replaced}) | flags={len(flags)}"
         + (f" [{' | '.join(flags)}]" if flags else ""))

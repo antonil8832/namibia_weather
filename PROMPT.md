@@ -12,13 +12,15 @@ an interactive dashboard and a static chart. Runs are unattended: never ask ques
 take the most reasonable choice and record it in data/run_log.txt.
 
 SCHEDULER
-GitHub Actions workflow .github/workflows/update-weather.yml, cron "7 4,10,13,17 * * *"
-(UTC). Windhoek is UTC+2 all year, so runs happen at about:
-  06:07 early_morning (near daily minimum) · 12:07 midday · 15:07 peak (near daily
-  maximum) · 19:07 evening.
-The slot is derived from the actual Windhoek time: nearest slot within ±90 minutes,
-otherwise "adhoc". This tolerates GitHub's usual scheduling delays.
-Manual run: Actions tab → "Update Namibia weather" → Run workflow.
+GitHub Actions workflow .github/workflows/update-weather.yml, cron "7,37 4-17 * * *"
+(UTC) = every 30 minutes from 06:07 to 19:37 Windhoek time (UTC+2 all year).
+GitHub may delay or drop individual scheduled runs, so each slot gets several chances.
+The slot is derived from the actual Windhoek time: nearest of
+  06:00 early_morning · 12:00 midday · 15:00 peak · 19:00 evening
+within ±90 minutes, otherwise "adhoc". Scheduled runs (--scheduled) record a slot only
+if it has no reading yet that day and otherwise exit in seconds without committing.
+Manual run (Actions tab → "Update Namibia weather" → Run workflow) always records a
+reading, replacing that day's reading for the same slot.
 
 LOCATIONS (name, latitude, longitude, climate zone)
   Windhoek        -22.56, 17.08   Central highlands
