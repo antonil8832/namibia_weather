@@ -161,7 +161,6 @@ PAGE = """<!doctype html>
 <html lang="en" data-theme="light"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Namibia Weather Monitor</title>
-<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <style>
 :root {{ --surface:{surface}; --ink:{ink}; --ink2:{ink2}; --grid:{grid}; color-scheme: light; }}
 body {{ margin:0; background:var(--surface); color:var(--ink); font-family:Inter,system-ui,sans-serif; }}
@@ -195,10 +194,11 @@ def main():
     cfg = {"displaylogo": False, "responsive": True}
     since = df.ts.max() - pd.Timedelta(days=14)
     figs = []
-    for fn in (temperature_fig, rain_fig, wind_fig):
+    for i, fn in enumerate((temperature_fig, rain_fig, wind_fig)):
         fig = fn(df)
         fig.update_xaxes(range=[since, df.ts.max() + pd.Timedelta(hours=6)])
-        figs.append(fig.to_html(full_html=False, include_plotlyjs=False, config=cfg))
+        # "cdn" loads the plotly.js version that matches the installed plotly package
+        figs.append(fig.to_html(full_html=False, include_plotlyjs="cdn" if i == 0 else False, config=cfg))
     html = PAGE.format(surface=SURFACE, ink=INK, ink2=INK2, grid=GRID,
                        updated=datetime.now(TZ).strftime("%d %b %Y, %H:%M"),
                        n_days=df.date.nunique(), table=latest_table(df),
