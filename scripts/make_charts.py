@@ -197,6 +197,7 @@ def main():
     for i, fn in enumerate((temperature_fig, rain_fig, wind_fig)):
         fig = fn(df)
         fig.update_xaxes(range=[since, df.ts.max() + pd.Timedelta(hours=6)])
+        fig.update_yaxes(autorange=True)  # explicit, otherwise matched y-axes start at a fixed -1..4
         # "cdn" loads the plotly.js version that matches the installed plotly package
         figs.append(fig.to_html(full_html=False, include_plotlyjs="cdn" if i == 0 else False, config=cfg))
     html = PAGE.format(surface=SURFACE, ink=INK, ink2=INK2, grid=GRID,
