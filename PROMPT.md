@@ -19,6 +19,10 @@ The slot is derived from the actual Windhoek time: nearest of
   06:00 early_morning · 12:00 midday · 15:00 peak · 19:00 evening
 within ±90 minutes, otherwise "adhoc". Scheduled runs (--scheduled) record a slot only
 if it has no reading yet that day and otherwise exit in seconds without committing.
+Primary trigger: a Claude scheduled task ("Namibia weather – trigger readings") starts the
+workflow via workflow_dispatch at 06:05, 12:05, 15:05 and 19:05 Windhoek time, because
+GitHub's cron proved unreliable (most scheduled runs were never started). The GitHub cron
+stays as a backup.
 Manual run (Actions tab → "Update Namibia weather" → Run workflow) always records a
 reading, replacing that day's reading for the same slot.
 
