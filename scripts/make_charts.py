@@ -31,6 +31,8 @@ WIND, GUST_BAR = "#2a78d6", "#b7d3f6"
 RAMPS = {
     "orange": ["#fdeee5", "#fad0b6", "#f5a77d", "#eb6834", "#c94f1d", "#963811", "#64250a"],
     "blue":   ["#eef5fd", "#cde2fb", "#9ec5f4", "#6da7ec", "#2a78d6", "#1c5cab", "#104281"],
+    # Temperature: dark blue (coldest) -> light neutral -> dark red (hottest), shared by min and max
+    "temp":   ["#0d366b", "#2a78d6", "#9ec5f4", "#f0efec", "#f5a3a2", "#e34948", "#8c1c1b"],
     "violet": ["#f1effb", "#d6d1f2", "#b2a9e6", "#8b7fd6", "#6556c2", "#4a3aa7", "#2e2370"],
 }
 
@@ -230,7 +232,7 @@ const T = {
         min:"Min", max:"Max", gusts:"Max. Böen", at:"um", dfmt:"%d. %b", dfull:"%a %d. %b %Y",
         metric:{tmax:"Max. Temperatur (°C)", tmin:"Min. Temperatur (°C)", rain:"Niederschlag (mm)", gmax:"Max. Böen (km/h)"} },
 };
-const METRIC = { tmax:{ramp:"orange", unit:"°C", nd:0}, tmin:{ramp:"blue", unit:"°C", nd:0},
+const METRIC = { tmax:{ramp:"temp", unit:"°C", nd:0}, tmin:{ramp:"temp", unit:"°C", nd:0},
                  rain:{ramp:"blue", unit:"mm", nd:1}, gmax:{ramp:"violet", unit:"km/h", nd:0} };
 
 Plotly.register({moduleType:"locale", name:"de", dictionary:{
@@ -242,6 +244,11 @@ Plotly.register({moduleType:"locale", name:"de", dictionary:{
 const state = { lang:"en", period:"7", metric:"tmax", loc:DATA.order[0] };
 const store = { get(k){ try { return localStorage.getItem(k); } catch(e) { return null; } },
                 set(k,v){ try { localStorage.setItem(k,v); } catch(e) {} } };
+
+const TEMP_SCALE = (() => {
+  const v = DATA.order.flatMap(l => [...DATA.daily[l].tmin, ...DATA.daily[l].tmax]).filter(x => x != null);
+  return [Math.floor(Math.min(...v)), Math.ceil(Math.max(...v))];
+})();
 
 function firstDate() {
   const n = state.period === "all" ? DATA.dates.length : Math.min(+state.period, DATA.dates.length);
@@ -277,6 +284,9 @@ function drawHeat() {
   const flat = z.flat().filter(v => v != null);
   let zmin = Math.min(...flat), zmax = Math.max(...flat);
   if (state.metric === "rain") { zmin = 0; zmax = Math.max(zmax, 5); }
+  // Min and max temperature share one fixed scale over all data, so the same temperature
+  // always has the same colour, whichever view or period is shown
+  if (state.metric === "tmin" || state.metric === "tmax") [zmin, zmax] = TEMP_SCALE;
   const el = document.getElementById("fig-heat");
   const plotW = Math.max(200, el.clientWidth - 112);
   const showText = plotW / Math.max(1, dates.length) >= 28;

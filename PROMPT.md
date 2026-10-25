@@ -79,8 +79,10 @@ browser from data embedded in the page, so all controls work offline and instant
     (remembered per viewer).
   1. Latest readings table: one row per location, flagged values marked.
   2. "All locations, day by day": heatmap, one row per location, one column per day,
-     darker = higher. Metric switch: Max temp (orange) | Min temp (blue) | Rain (blue) |
-     Max gusts (violet). Values are
+     Metric switch: Max temp | Min temp | Rain | Max gusts. Min and max temperature
+     share one fixed colour scale over all data (dark blue = coldest, light neutral,
+     dark red = hottest), so the same temperature has the same colour in both views.
+     Rain: blue shades; gusts: violet shades (darker = higher). Values are
      printed in the cells when they fit (about 7 days on a phone), otherwise tap/hover.
   3. "Location detail" for one location chosen from a drop-down:
      - Temperature: continuous smoothed band between daily min (blue line) and daily max
