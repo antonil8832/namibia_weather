@@ -79,15 +79,17 @@ browser from data embedded in the page, so all controls work offline and instant
     (remembered per viewer).
   1. Latest readings table: one row per location, flagged values marked.
   2. "All locations, day by day": heatmap, one row per location, one column per day,
-     darker = higher. Metric switch: Max temp | Min temp | Rain | Max gusts. Values are
+     darker = higher. Metric switch: Max temp (orange) | Min temp (blue) | Rain (blue) |
+     Max gusts (violet). Values are
      printed in the cells when they fit (about 7 days on a phone), otherwise tap/hover.
   3. "Location detail" for one location chosen from a drop-down:
-     - Temperature: one bar per day from daily min to max, the 4 readings as dots.
+     - Temperature: continuous smoothed band between daily min (blue line) and daily max
+       (orange line), the 4 readings as dark dots.
      - Daily rainfall: one bar per day.
      - Wind: daily max gusts as bars, wind speed at each reading as dots.
      Dots are hidden automatically when a day is narrower than ~30 px (long periods on
-     a phone), leaving the daily bars.
-docs/latest.png: static 3×3 chart of daily min–max temperature, last 14 days.
+     a phone), leaving the daily band and bars.
+docs/latest.png: static 3×3 chart of the daily min–max temperature band, last 14 days.
 Units on every axis, hover tooltips, footer "Data: Open-Meteo.com (CC BY 4.0)" and the
 last update time in Windhoek time.
 

@@ -24,7 +24,7 @@ SLOT_LABEL = {"early_morning": "06:00", "midday": "12:00", "peak": "15:00",
 
 # Colors (validated reference palette, light mode)
 SURFACE, INK, INK2, GRID = "#fcfcfb", "#0b0b0b", "#52514e", "#e6e5e0"
-TEMP, TEMP_BAR = "#eb6834", "#f6b08a"
+TEMP, TEMP_BAR, COLD = "#eb6834", "#f6b08a", "#2a78d6"
 RAIN = "#2a78d6"
 WIND, GUST_BAR = "#2a78d6", "#b7d3f6"
 # One-hue sequential ramps (light -> dark) for the overview heatmap
@@ -99,8 +99,9 @@ def static_png(df):
     for ax, loc in zip(axes.flat, ORDER):
         s = daily[daily.location == loc]
         ax.set_facecolor(SURFACE)
-        ax.bar(s.date, s.tmax - s.tmin, bottom=s.tmin, width=0.7, color=TEMP_BAR,
-               edgecolor=TEMP, linewidth=0.8)
+        ax.fill_between(s.date, s.tmin, s.tmax, color=TEMP_BAR, alpha=0.45, linewidth=0)
+        ax.plot(s.date, s.tmax, color=TEMP, lw=2)
+        ax.plot(s.date, s.tmin, color=COLD, lw=2)
         ax.set_title(loc, fontsize=11, color=INK, loc="left")
         ax.grid(axis="y", color=GRID, lw=0.8)
         ax.set_axisbelow(True)
@@ -217,19 +218,19 @@ const DATA = @@DATA@@;
 const CONFIG = @@CONFIG@@;
 const RAMPS = @@RAMPS@@;
 const C = {surface:"@@SURFACE@@", ink:"@@INK@@", ink2:"@@INK2@@", grid:"@@GRID@@",
-           temp:"@@TEMP@@", tempBar:"@@TEMP_BAR@@", rain:"@@RAIN@@", wind:"@@WIND@@", gustBar:"@@GUST_BAR@@"};
+           temp:"@@TEMP@@", cold:"@@COLD@@", rain:"@@RAIN@@", wind:"@@WIND@@", gustBar:"@@GUST_BAR@@"};
 const DAY = 86400000;
 const T = {
-  en: { temp:"Temperature", tempRange:"Daily min–max temperature", reading:"Reading", rain:"Daily rainfall",
+  en: { temp:"Temperature", tempRange:"Daily min–max temperature", reading:"Reading", dayMax:"Daily max", dayMin:"Daily min", rain:"Daily rainfall",
         wind:"Wind", gustMax:"Daily max gusts", windReading:"Wind at reading",
         min:"Min", max:"Max", gusts:"Max gusts", at:"at", dfmt:"%d %b", dfull:"%a %d %b %Y",
         metric:{tmax:"Max temperature (°C)", tmin:"Min temperature (°C)", rain:"Rainfall (mm)", gmax:"Max gusts (km/h)"} },
-  de: { temp:"Temperatur", tempRange:"Tägliche Min–Max-Temperatur", reading:"Messung", rain:"Tägliche Niederschlagsmenge",
+  de: { temp:"Temperatur", tempRange:"Tägliche Min–Max-Temperatur", reading:"Messung", dayMax:"Tages-Max.", dayMin:"Tages-Min.", rain:"Tägliche Niederschlagsmenge",
         wind:"Wind", gustMax:"Tägliche max. Böen", windReading:"Wind zur Messzeit",
         min:"Min", max:"Max", gusts:"Max. Böen", at:"um", dfmt:"%d. %b", dfull:"%a %d. %b %Y",
         metric:{tmax:"Max. Temperatur (°C)", tmin:"Min. Temperatur (°C)", rain:"Niederschlag (mm)", gmax:"Max. Böen (km/h)"} },
 };
-const METRIC = { tmax:{ramp:"orange", unit:"°C", nd:0}, tmin:{ramp:"orange", unit:"°C", nd:0},
+const METRIC = { tmax:{ramp:"orange", unit:"°C", nd:0}, tmin:{ramp:"blue", unit:"°C", nd:0},
                  rain:{ramp:"blue", unit:"mm", nd:1}, gmax:{ramp:"violet", unit:"km/h", nd:0} };
 
 Plotly.register({moduleType:"locale", name:"de", dictionary:{
@@ -305,17 +306,24 @@ function drawDetail() {
   const W = 0.62 * DAY;
   const cfg = Object.assign({locale:state.lang}, CONFIG);
 
-  // Temperature: one bar per day from min to max, readings as dots inside the bar
-  const tmin = di.map(i => dl.tmin[i]), tmax = di.map(i => dl.tmax[i]);
-  const tempTraces = [{ type:"bar", name:t.tempRange, x:noon, base:tmin,
-      y:di.map((_, k) => (tmax[k] == null || tmin[k] == null) ? null : +(tmax[k] - tmin[k]).toFixed(1)),
-      width:W, marker:{color:C.tempBar, line:{width:0}}, customdata:di.map((_, k) => [tmin[k], tmax[k]]),
-      hovertemplate:"%{x|" + t.dfull + "}<br>" + t.min + " %{customdata[0]:.1f} °C · " + t.max + " %{customdata[1]:.1f} °C<extra></extra>" }];
+  // Temperature: continuous band between daily min (blue) and daily max (orange), smoothed;
+  // the individual readings as dots on top
+  // Points at noon; the first and last day are extended flat to midnight so the band spans the whole period
+  const pad = a => a.length ? [a[0], ...a, a[a.length - 1]] : a;
+  const bandX = di.length ? [dl.d[di[0]] + "T00:00", ...noon, dl.d[di[di.length - 1]] + "T23:59"] : [];
+  const tmin = pad(di.map(i => dl.tmin[i])), tmax = pad(di.map(i => dl.tmax[i]));
+  const line = (name, y, color, rank, extra) => Object.assign({ type:"scatter", mode:"lines", name, x:bandX, y,
+      line:{color, width:2.5, shape:"spline", smoothing:0.8}, legendrank:rank, connectgaps:false,
+      hovertemplate:"%{x|" + t.dfull + "}<br>" + name + ": %{y:.1f} °C<extra></extra>" }, extra || {});
+  const tempTraces = [
+    line(t.dayMin, tmin, C.cold, 2),
+    line(t.dayMax, tmax, C.temp, 1, { fill:"tonexty", fillcolor:"rgba(235,104,52,0.16)" }),
+  ];
   if (!many) tempTraces.push({ type:"scatter", mode:"markers", name:t.reading, x:ri.map(i => rd.t[i]), y:ri.map(i => rd.temp[i]),
-      marker:{color:C.temp, size:8, line:{color:C.surface, width:2}}, customdata:ri.map(i => rd.slot[i]),
+      legendrank:3, marker:{color:C.ink2, size:7, line:{color:C.surface, width:1.5}}, customdata:ri.map(i => rd.slot[i]),
       hovertemplate:"%{x|" + t.dfull + "}, %{customdata}<br>%{y:.1f} °C<extra></extra>" });
-  const lt = baseLayout((many ? t.tempRange : t.temp) + " – " + loc, "°C", 320);
-  if (many) lt.showlegend = false;
+  const lt = baseLayout(t.temp + " – " + loc, "°C", 320);
+  lt.legend.traceorder = "normal";
   Plotly.react("fig-temp", tempTraces, lt, cfg);
 
   // Rain: one bar per day
@@ -397,7 +405,7 @@ def main():
     values = {
         "TITLE_EN": escape(TITLE["en"]), "TITLE_DE": escape(TITLE["de"]),
         "SURFACE": SURFACE, "INK": INK, "INK2": INK2, "GRID": GRID,
-        "TEMP": TEMP, "TEMP_BAR": TEMP_BAR, "RAIN": RAIN, "WIND": WIND, "GUST_BAR": GUST_BAR,
+        "TEMP": TEMP, "COLD": COLD, "RAIN": RAIN, "WIND": WIND, "GUST_BAR": GUST_BAR,
         "PLOTLY_SRC": f"https://cdn.plot.ly/plotly-{plotly.offline.get_plotlyjs_version()}.min.js",
         "SUB": sub, "H_LATEST": L("Latest readings", "Aktuelle Messwerte"),
         "THEAD": "".join(f"<th>{L(en, de)}</th>" for en, de in HEAD),
