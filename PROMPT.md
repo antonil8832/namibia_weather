@@ -73,13 +73,21 @@ charts from existing data, and let the workflow run show as failed (GitHub e-mai
 the repository owner).
 
 CHARTS – rebuilt from the full CSV after every run
-docs/index.html (published via GitHub Pages), default window last 14 days, zoomable:
+docs/index.html (published via GitHub Pages), bilingual EN/DE. The charts are drawn in the
+browser from data embedded in the page, so all controls work offline and instantly:
+  - Period switch for the whole page: Last 7 days | Last 2 weeks | All data
+    (remembered per viewer).
   1. Latest readings table: one row per location, flagged values marked.
-  2. Temperature: 3×3 small multiples (one panel per location, shared axes), readings
-     as line + markers, shaded daily min–max band.
-  3. Daily rainfall: 3×3 small multiples, bars, axis from zero.
-  4. Wind speed (solid) and gusts (dotted): 3×3 small multiples.
-docs/latest.png: static 3×3 temperature chart, last 14 days.
+  2. "All locations, day by day": heatmap, one row per location, one column per day,
+     darker = higher. Metric switch: Max temp | Min temp | Rain | Max gusts. Values are
+     printed in the cells when they fit (about 7 days on a phone), otherwise tap/hover.
+  3. "Location detail" for one location chosen from a drop-down:
+     - Temperature: one bar per day from daily min to max, the 4 readings as dots.
+     - Daily rainfall: one bar per day.
+     - Wind: daily max gusts as bars, wind speed at each reading as dots.
+     Dots are hidden automatically when a day is narrower than ~30 px (long periods on
+     a phone), leaving the daily bars.
+docs/latest.png: static 3×3 chart of daily min–max temperature, last 14 days.
 Units on every axis, hover tooltips, footer "Data: Open-Meteo.com (CC BY 4.0)" and the
 last update time in Windhoek time.
 
