@@ -227,3 +227,4 @@
 2026-11-24 12:06:39 | slot=midday | rows=9 (replaced 0) | flags=0
 2026-11-24 15:08:32 | slot=peak | rows=9 (replaced 0) | flags=0
 2026-11-24 19:06:26 | slot=evening | rows=9 (replaced 0) | flags=0
+2026-11-25 06:07:04 | slot=early_morning | ERROR | API failed after 3 attempts: HTTP Error 429: Too Many Requests | no rows written
