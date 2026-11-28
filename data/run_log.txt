@@ -239,3 +239,4 @@
 2026-11-27 12:05:57 | slot=midday | rows=9 (replaced 0) | flags=0
 2026-11-27 15:07:22 | slot=peak | rows=9 (replaced 0) | flags=0
 2026-11-27 19:08:54 | slot=evening | ERROR | API failed after 3 attempts: <urlopen error _ssl.c:994: The handshake operation timed out> | no rows written
+2026-11-28 06:06:24 | slot=early_morning | rows=9 (replaced 0) | flags=0
